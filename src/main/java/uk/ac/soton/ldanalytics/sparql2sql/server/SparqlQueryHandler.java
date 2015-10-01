@@ -1,6 +1,7 @@
 package uk.ac.soton.ldanalytics.sparql2sql.server;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -15,6 +16,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import uk.ac.soton.ldanalytics.sparql2sql.model.RdfTableMapping;
 import uk.ac.soton.ldanalytics.sparql2sql.model.SparqlOpVisitor;
@@ -122,7 +124,19 @@ public class SparqlQueryHandler implements Handler {
 				rs.close();
 				conn.close();
 				
-				System.out.println(rsJson);
+				JSONObject results = new JSONObject();
+				JSONObject bindings = new JSONObject();
+				bindings.put("bindings",rsJson);
+				results.put("results",bindings);
+				
+				response.setContentType("application/sparql-results+json");
+		        response.setStatus(HttpServletResponse.SC_OK);
+				
+				PrintWriter pw = response.getWriter();
+				
+				pw.write(results.toString());
+				
+				baseRequest.setHandled(true);
 				
 			} catch(Exception e) {
 				e.printStackTrace();
