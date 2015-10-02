@@ -5,7 +5,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 
 import uk.ac.soton.ldanalytics.sparql2sql.model.RdfTableMapping;
 
@@ -34,7 +36,11 @@ public class SparqlServer {
 				mapping.loadMapping(file.getPath());
 		}
 		
-        Server server = new Server(8080);
+        Server server = new Server();                                   
+        ServerConnector connector=new ServerConnector(server);
+        connector.setPort(8080);
+        connector.setHost("localhost");        
+        server.setConnectors(new Connector[]{connector});
         server.setHandler(new SparqlQueryHandler(config, mapping));
  
         try {
