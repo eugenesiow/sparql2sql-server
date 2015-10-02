@@ -12,6 +12,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -21,6 +22,7 @@ import org.json.JSONObject;
 import uk.ac.soton.ldanalytics.sparql2sql.model.RdfTableMapping;
 import uk.ac.soton.ldanalytics.sparql2sql.model.SparqlOpVisitor;
 import uk.ac.soton.ldanalytics.sparql2sql.util.ResultSetConverter;
+import uk.ac.soton.ldanalytics.sparql2sql.util.SQLFormatter;
 
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
@@ -107,35 +109,47 @@ public class SparqlQueryHandler implements Handler {
 			try {
 				Class.forName(config.getProperty("driver"));
 				
-				String queryStr = request.getParameter("query");
-				Query query = QueryFactory.create(queryStr);
-				Op op = Algebra.compile(query);
+				String queryStr = null;
+				if(request.getContentType().toLowerCase().equals("application/sparql-query")) {
+					queryStr = IOUtils.toString(request.getInputStream()); 
+				} else {
+					queryStr = request.getParameter("query");
+				}
 				
-				SparqlOpVisitor v = new SparqlOpVisitor();
-				v.useMapping(mapping);
-				OpWalker.walk(op,v);
-				String sql = v.getSQL();
-//				System.out.println(sql);
+				if(queryStr!=null) {
+					
+//					System.out.println(queryStr);
 				
-				Connection conn = DriverManager.getConnection(config.getProperty("jdbc"), config.getProperty("username"), config.getProperty("password"));
-				Statement stat = conn.createStatement();
-				ResultSet rs = stat.executeQuery(sql);
-				JSONArray rsJson = ResultSetConverter.convert(rs);
-				rs.close();
-				conn.close();
-				
-				JSONObject results = new JSONObject();
-				JSONObject bindings = new JSONObject();
-				bindings.put("bindings",rsJson);
-				results.put("results",bindings);
-				
-				response.setContentType("application/sparql-results+json");
-		        response.setStatus(HttpServletResponse.SC_OK);
-				
-				PrintWriter pw = response.getWriter();
-				
-				pw.write(results.toString());
-				
+					Query query = QueryFactory.create(queryStr);
+					Op op = Algebra.compile(query);
+					
+					SparqlOpVisitor v = new SparqlOpVisitor();
+					v.useMapping(mapping);
+					OpWalker.walk(op,v);
+					String sql = v.getSQL();
+					SQLFormatter formatter = new SQLFormatter();
+//					System.out.println(formatter.format(sql));
+					
+					Connection conn = DriverManager.getConnection(config.getProperty("jdbc"), config.getProperty("username"), config.getProperty("password"));
+					Statement stat = conn.createStatement();
+					ResultSet rs = stat.executeQuery(sql);
+					JSONArray rsJson = ResultSetConverter.convert(rs);
+					rs.close();
+					conn.close();
+					
+					JSONObject results = new JSONObject();
+					JSONObject bindings = new JSONObject();
+					bindings.put("bindings",rsJson);
+					results.put("results",bindings);
+					
+					response.setContentType("application/sparql-results+json");
+			        response.setStatus(HttpServletResponse.SC_OK);
+					
+					PrintWriter pw = response.getWriter();
+					
+					pw.write(results.toString());
+				}
+					
 				baseRequest.setHandled(true);
 				
 			} catch(Exception e) {

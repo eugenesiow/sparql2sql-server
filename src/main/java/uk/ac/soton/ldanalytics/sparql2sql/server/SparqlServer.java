@@ -32,14 +32,16 @@ public class SparqlServer {
 		File folder = new File(config.getProperty("mappings"));
 		for(File file:folder.listFiles()) {
 			String tempFileName = file.getName();
-			if(!tempFileName.startsWith(".") && tempFileName.endsWith(".nt"))
+			if(!tempFileName.startsWith(".") && tempFileName.endsWith(".nt")) {
+//				System.out.println(tempFileName);
 				mapping.loadMapping(file.getPath());
+			}
 		}
 		
         Server server = new Server();                                   
         ServerConnector connector=new ServerConnector(server);
         connector.setPort(8080);
-        connector.setHost("localhost");        
+//        connector.setHost("localhost"); //only allow localhost connections
         server.setConnectors(new Connector[]{connector});
         server.setHandler(new SparqlQueryHandler(config, mapping));
  
