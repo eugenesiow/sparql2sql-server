@@ -109,9 +109,12 @@ public class SparqlQueryHandler implements Handler {
 			try {
 				Class.forName(config.getProperty("driver"));
 				
+				
 				String queryStr = null;
-				if(request.getContentType().toLowerCase().equals("application/sparql-query")) {
-					queryStr = IOUtils.toString(request.getInputStream()); 
+				if(request.getContentType()!=null) {
+					if(request.getContentType().toLowerCase().equals("application/sparql-query")) {
+						queryStr = IOUtils.toString(request.getInputStream()); 
+					}
 				} else {
 					queryStr = request.getParameter("query");
 				}
@@ -127,7 +130,7 @@ public class SparqlQueryHandler implements Handler {
 					v.useMapping(mapping);
 					OpWalker.walk(op,v);
 					String sql = v.getSQL();
-					SQLFormatter formatter = new SQLFormatter();
+//					SQLFormatter formatter = new SQLFormatter();
 //					System.out.println(formatter.format(sql));
 					
 					Connection conn = DriverManager.getConnection(config.getProperty("jdbc"), config.getProperty("username"), config.getProperty("password"));
